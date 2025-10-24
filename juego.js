@@ -1,6 +1,6 @@
 class Juego {
   pixiApp;
-  conejitos = [];
+  personas = [];
   width;
   height;
 
@@ -47,8 +47,8 @@ class Juego {
       const y = 0.5 * this.height;
       //crea una instancia de clase Conejito, el constructor de dicha clase toma como parametros la textura
       // q queremos usar,X,Y y una referencia a la instancia del juego (this)
-      const conejito = new Conejito(animacionesPersonaje1, x, y, this);
-      this.conejitos.push(conejito);
+      const persona = new Persona(animacionesPersonaje1, x, y, this);
+      this.personas.push(persona);
     }
 
     //agregamos el metodo this.gameLoop al ticker.
@@ -59,7 +59,7 @@ class Juego {
 
     // this.asignarPerseguidorRandomATodos();
     // this.asignarTargets();
-    this.asignarElMouseComoTargetATodosLosConejitos();
+    this.asignarElMouseComoTargetATodosLasPersonas();
   }
 
   agregarInteractividadDelMouse() {
@@ -71,36 +71,36 @@ class Juego {
 
   gameLoop(time) {
     //iteramos por todos los conejitos
-    for (let unConejito of this.conejitos) {
+    for (let unaPersona of this.personas) {
       //ejecutamos el metodo tick de cada conejito
-      unConejito.tick();
-      unConejito.render();
+      unaPersona.tick();
+      unaPersona.render();
     }
   }
 
-  getConejitoRandom() {
-    return this.conejitos[Math.floor(this.conejitos.length * Math.random())];
+  getPersonaRandom() {
+    return this.personas[Math.floor(this.personas.length * Math.random())];
   }
 
   asignarTargets() {
-    for (let cone of this.conejitos) {
-      cone.asignarTarget(this.getConejitoRandom());
+    for (let cone of this.personas) {
+      cone.asignarTarget(this.getPersonaRandom());
     }
   }
 
-  asignarElMouseComoTargetATodosLosConejitos() {
-    for (let cone of this.conejitos) {
+  asignarElMouseComoTargetATodosLasPersonas() {
+    for (let cone of this.personas) {
       cone.asignarTarget(this.mouse);
     }
   }
 
   asignarPerseguidorRandomATodos() {
-    for (let cone of this.conejitos) {
-      cone.perseguidor = this.getConejitoRandom();
+    for (let cone of this.personas) {
+      cone.perseguidor = this.getPersonaRandom();
     }
   }
-  asignarElMouseComoPerseguidorATodosLosConejitos() {
-    for (let cone of this.conejitos) {
+  asignarElMouseComoPerseguidorATodosLasPersonas() {
+    for (let cone of this.personas) {
       cone.perseguidor = this.mouse;
     }
   }

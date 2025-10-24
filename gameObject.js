@@ -117,7 +117,7 @@ class GameObject {
     let promedioDePosicionDeAquellosQEstanMuyCercaMio = { x: 0, y: 0 };
     let contador = 0;
 
-    for (let persona of this.juego.conejitos) {
+    for (let persona of this.juego.personas) {
       if (this != persona) {
         if (
           calcularDistancia(this.posicion, persona.posicion) <
