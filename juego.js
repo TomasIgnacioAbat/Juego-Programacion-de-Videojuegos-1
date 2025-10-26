@@ -1,65 +1,80 @@
 class Juego {
   pixiApp;
   personas = [];
-  width;
-  height;
+  anchoPantalla = 1280;
+  altoPantalla = 720;
 
   constructor() {
-    this.width = 1280;
-    this.height = 720;
     this.mouse = { posicion: { x: 0, y: 0 } };
-    this.initPIXI();
+    this.inciarPixi();
   }
 
-  //async indica q este metodo es asyncronico, es decir q puede usar "await"
-  async initPIXI() {
-    //creamos la aplicacion de pixi y la guardamos en la propiedad pixiApp
-    this.pixiApp = new PIXI.Application();
+  //async indica q este metodo es asincrónico, es decir q debe usar "await".
+  async inciarPixi() {
+    this.pixiApp = new PIXI.Application(); //creamos la aplicacion de pixi y la guardamos en la propiedad pixiApp
 
-    this.pixiApp.stage.name = "el stage";
+    this.renombrarEscenario("El Stage");
 
-    //esto es para que funcione la extension de pixi
-    globalThis.__PIXI_APP__ = this.pixiApp;
+    globalThis.__PIXI_APP__ = this.pixiApp; //esto es para que funcione la extension de pixi
 
     const opcionesDePixi = {
-      background: "#1099bb",
-      width: this.width,
-      height: this.height,
+      backgroundColor: "#1099bb",
+      width: this.anchoPantalla,
+      height: this.altoPantalla,
       antialias: false,
       SCALE_MODE: PIXI.SCALE_MODES.NEAREST,
     };
 
-    //inicializamos pixi con las opciones definidas anteriormente
-    //await indica q el codigo se frena hasta que el metodo init de la app de pixi haya terminado
-    //puede tardar 2ms, 400ms.. no lo sabemos :O
-    await this.pixiApp.init(opcionesDePixi);
+    //await indica q el codigo se frena hasta que el metodo init de la app de pixi haya terminado, puede tardar 2ms, 400ms.. no lo sabemos :O
+    await this.pixiApp.init(opcionesDePixi); //cuando termina se incializa pixi con las opciones definidas anteriormente
 
-    // //agregamos el elementos canvas creado por pixi en el documento html
-    document.body.appendChild(this.pixiApp.canvas);
+    document.body.appendChild(this.pixiApp.canvas); //agregamos el elementos canvas creado por pixi en el documento html
 
-    //cargamos la imagen bunny.png y la guardamos en la variable texture
-    const texture = await PIXI.Assets.load("bunny.png");
+    // const texture = await PIXI.Assets.load("bunny.png"); //cargamos la imagen bunny.png y la guardamos en la variable texture (deprecated, ahora lo tengo como ejemplo nomás)
 
-    const animacionesPersonaje1 = await PIXI.Assets.load("img/personaje.json");
-
-    for (let i = 0; i < 30; i++) {
-      const x = 0.5 * this.width;
-      const y = 0.5 * this.height;
-      //crea una instancia de clase Conejito, el constructor de dicha clase toma como parametros la textura
-      // q queremos usar,X,Y y una referencia a la instancia del juego (this)
-      const persona = new Persona(animacionesPersonaje1, x, y, this);
-      this.personas.push(persona);
-    }
+    this.crear_Personajes(30);
 
     //agregamos el metodo this.gameLoop al ticker.
     //es decir: en cada frame vamos a ejecutar el metodo this.gameLoop
     this.pixiApp.ticker.add(this.gameLoop.bind(this));
 
-    this.agregarInteractividadDelMouse();
+    this.ejecutarCodigoDespuesDeIniciarPIXI();
 
+    console.log(this.personas);
+  }
+
+  //Configuraciones de pixi --------
+  renombrarEscenario(nuevoNombre) {
+    this.pixiApp.stage.name = nuevoNombre;
+  }
+
+  async cargarTexturas(stringLocalizacionTextura) {
+    const unaTextura = await PIXI.Assets.load(stringLocalizacionTextura);
+    return unaTextura;
+  }
+
+  async crear_Personajes(numeroDePersonas) {
+    const textura = await this.cargarTexturas("img/personaje.json");
+    const x = 0.5 * this.anchoPantalla;
+    const y = 0.5 * this.altoPantalla;
+    const juego = this;
+    for (let i = 0; i < numeroDePersonas; i++) {
+      //Crea una instancia de clase que elijamos, el constructor de dicha clase toma como parametros la textura q queremos usar, X, Y y una referencia a la instancia del juego (la que sería this ya que estamos dentro de la clase Juego)
+      this.personas.push(new Persona(textura, x, y, juego));
+    }
+    this.asignarEventosAPersonas();
+  }
+
+  ejecutarCodigoDespuesDeIniciarPIXI() {
+    this.agregarInteractividadDelMouse();
+  }
+
+  //Cierra configuraciones de pixi --------
+
+  asignarEventosAPersonas(){
+    this.asignarElMouseComoTargetATodosLasPersonas()
     // this.asignarPerseguidorRandomATodos();
     // this.asignarTargets();
-    this.asignarElMouseComoTargetATodosLasPersonas();
   }
 
   agregarInteractividadDelMouse() {
@@ -70,9 +85,8 @@ class Juego {
   }
 
   gameLoop(time) {
-    //iteramos por todos los conejitos
     for (let unaPersona of this.personas) {
-      //ejecutamos el metodo tick de cada conejito
+      //ejecutamos el metodo tick de persona
       unaPersona.tick();
       unaPersona.render();
     }
@@ -89,8 +103,9 @@ class Juego {
   }
 
   asignarElMouseComoTargetATodosLasPersonas() {
-    for (let cone of this.personas) {
-      cone.asignarTarget(this.mouse);
+    for (let persona of this.personas) {
+      persona.asignarTarget(this.mouse);
+      console.log("Asignao");
     }
   }
 
