@@ -1,154 +1,68 @@
 class GameObject {
-  //defino las propiedades q tiene mi clase, aunq podria no definirlas
   sprite;
   id;
-  x = 0;
-  y = 0;
-  target;
-  perseguidor;
-  aceleracionMaxima = 0.2;
-  velocidadMaxima = 3;
+  posicion;
   spritesAnimados = {};
   radio = 10;
-  distanciaPersonal = 20;
-  distanciaParaLlegar = 300;
+  juego;
+  container;
+  angulo = 180;
+  velocidadLineal;
 
-  constructor(textureData, x, y, juego) {
+  constructor(JSONdeTextura, xIncial, yIncial, juegoEnElQueEstoy) {
     this.container = new PIXI.Container();
-
-    this.container.name = "container";
-    this.vision = Math.random() * 200 + 1300;
-    //guarda una referencia a la instancia del juego
-    this.posicion = { x: x, y: y };
-    this.velocidad = { x: Math.random() * 10, y: Math.random() * 10 };
-    this.aceleracion = { x: 0, y: 0 };
-
-    this.juego = juego;
-    //generamos un ID para este conejito
-    this.id = Math.floor(Math.random() * 99999999);
-
-    // tomo como parametro la textura y creo un sprite
-
-    this.cargarSpritesAnimados(textureData);
-
+    this.container.name = "Contenedor de GameObject";
+    this.posicion = { x: xIncial, y: yIncial };
+    this.juego = juegoEnElQueEstoy; //guarda una referencia a la instancia del juego
+    this.id = Math.floor(Math.random() * 99999999); //generamos un ID para este gameObject
+    this.cargarSpritesAnimados(JSONdeTextura); //Tomo como parametro la textura y creo un sprite
     this.cambiarAnimacion("caminarAbajo");
-
-    // this.sprite.play();
-    // this.sprite.loop = true;
-    // this.sprite.animationSpeed = 0.1;
-    // this.sprite.scale.set(2);
-
-    // //le asigno x e y al sprite
-    // this.sprite.x = x;
-    // this.sprite.y = y;
-
-    // //establezco el punto de pivot en el medio:
-    // this.sprite.anchor.set(0.5);
-
-    // //agrego el sprite al stage
-    // //this.juego es una referencia a la instancia de la clase Juego
-    // //a su vez el juego tiene una propiedad llamada pixiApp, q es la app de PIXI misma,
-    // //q a su vez tiene el stage. Y es el Stage de pixi q tiene un metodo para agregar 'hijos'
-    // //(el stage es como un container/nodo)
-    // this.juego.pixiApp.stage.addChild(this.sprite);
-
-    this.juego.pixiApp.stage.addChild(this.container);
+    this.juego.pixiApp.stage.addChild(this.container); //Se añade el container (es decir, el contenedor de pixi que contiene las animaciones) al escenario
   }
 
-  cambiarAnimacion(cual) {
-    //hacemos todos invisibles
+  cargarSpritesAnimados(JSONdeTextura) {
+    for (let llave of Object.keys(JSONdeTextura.animations)) {
+      this.spritesAnimados[llave] = new PIXI.AnimatedSprite(
+        JSONdeTextura.animations[llave]
+      );
+
+      this.spritesAnimados[llave].play();
+      this.spritesAnimados[llave].loop = true;
+      this.spritesAnimados[llave].animationSpeed = 0.1;
+      this.spritesAnimados[llave].scale.set(2);
+      this.spritesAnimados[llave].anchor.set(0.5, 1); //establezco el punto de pivot en el medio
+
+      this.container.addChild(this.spritesAnimados[llave]);
+    }
+  }
+
+  cambiarAnimacion(nombreDeAnimacionEnElJSON) {
+    //para que de el efecto de que "cambia" de animación hacemos todos invisibles
     for (let key of Object.keys(this.spritesAnimados)) {
       this.spritesAnimados[key].visible = false;
     }
-    //y despues hacemos visible el q queremos
-    this.spritesAnimados[cual].visible = true;
-  }
-
-  cargarSpritesAnimados(textureData) {
-    for (let key of Object.keys(textureData.animations)) {
-      this.spritesAnimados[key] = new PIXI.AnimatedSprite(
-        textureData.animations[key]
-      );
-
-      this.spritesAnimados[key].play();
-      this.spritesAnimados[key].loop = true;
-      this.spritesAnimados[key].animationSpeed = 0.1;
-      this.spritesAnimados[key].scale.set(2);
-      this.spritesAnimados[key].anchor.set(0.5, 1);
-
-      this.container.addChild(this.spritesAnimados[key]);
-    }
+    //y despues hacemos visible el que queremos que se vea
+    this.spritesAnimados[nombreDeAnimacionEnElJSON].visible = true;
   }
 
   tick() {
-    //TODO: hablar de deltatime
-    this.aceleracion.x = 0;
-    this.aceleracion.y = 0;
-
-    this.separacion();
-
-    this.escapar();
-    this.perseguir();
-    this.limitarAceleracion();
-    this.velocidad.x +=
-      this.aceleracion.x * this.juego.pixiApp.ticker.deltaTime;
-    this.velocidad.y +=
-      this.aceleracion.y * this.juego.pixiApp.ticker.deltaTime;
-
+    //El método que se llama en cada frame, este se llama porque se lo referencia en "juego.js" dentro del gameLoop
     //variaciones de la velocidad
-    this.rebotar();
-    this.aplicarFriccion();
-    this.limitarVelocidad();
+    //this.rebotar(); //nos sirve en nuestro contexto?
+    this.moverPosicionSegunVelocidadYPixelesPorFrame();
+    this.guardarAnguloActual();
+    this.guardarVelocidadLinealActual();
+  }
 
-    //pixeles por frame
-    this.posicion.x += this.velocidad.x * this.juego.pixiApp.ticker.deltaTime;
-    this.posicion.y += this.velocidad.y * this.juego.pixiApp.ticker.deltaTime;
-
-    //guardamos el angulo
+  guardarAnguloActual() {
     this.angulo =
       radianesAGrados(Math.atan2(this.velocidad.y, this.velocidad.x)) + 180;
+  }
 
+  guardarVelocidadLinealActual() {
     this.velocidadLineal = Math.sqrt(
       this.velocidad.x * this.velocidad.x + this.velocidad.y * this.velocidad.y
     );
-  }
-
-  separacion() {
-    let promedioDePosicionDeAquellosQEstanMuyCercaMio = { x: 0, y: 0 };
-    let contador = 0;
-
-    for (let persona of this.juego.personas) {
-      if (this != persona) {
-        if (
-          calcularDistancia(this.posicion, persona.posicion) <
-          this.distanciaPersonal
-        ) {
-          contador++;
-          promedioDePosicionDeAquellosQEstanMuyCercaMio.x += persona.posicion.x;
-          promedioDePosicionDeAquellosQEstanMuyCercaMio.y += persona.posicion.y;
-        }
-      }
-    }
-
-    if (contador == 0) return;
-
-    promedioDePosicionDeAquellosQEstanMuyCercaMio.x /= contador;
-    promedioDePosicionDeAquellosQEstanMuyCercaMio.y /= contador;
-
-    let vectorQueSeAlejaDelPromedioDePosicion = {
-      x: this.posicion.x - promedioDePosicionDeAquellosQEstanMuyCercaMio.x,
-      y: this.posicion.y - promedioDePosicionDeAquellosQEstanMuyCercaMio.y,
-    };
-
-    vectorQueSeAlejaDelPromedioDePosicion = limitarVector(
-      vectorQueSeAlejaDelPromedioDePosicion,
-      1
-    );
-
-    const factor = 10;
-
-    this.aceleracion.x += vectorQueSeAlejaDelPromedioDePosicion.x * factor;
-    this.aceleracion.y += vectorQueSeAlejaDelPromedioDePosicion.y * factor;
   }
 
   cambiarDeSpriteAnimadoSegunAngulo() {
@@ -159,28 +73,23 @@ class GameObject {
     if ((this.angulo > 315 && this.angulo < 360) || this.angulo < 45) {
       this.cambiarAnimacion("caminarDerecha");
       this.spritesAnimados.caminarDerecha.scale.x = -2;
-    } else if (this.angulo > 135 && this.angulo < 225) {
+    } 
+    else if (this.angulo > 135 && this.angulo < 225) {
       this.cambiarAnimacion("caminarDerecha");
       this.spritesAnimados.caminarDerecha.scale.x = 2;
-    } else if (this.angulo < 135 && this.angulo > 45) {
+    } 
+    else if (this.angulo < 135 && this.angulo > 45) {
       this.cambiarAnimacion("caminarArriba");
-    } else {
+    } 
+    else {
       this.cambiarAnimacion("caminarAbajo");
     }
   }
 
-  limitarAceleracion() {
-    this.aceleracion = limitarVector(this.aceleracion, this.aceleracionMaxima);
-  }
-
-  limitarVelocidad() {
-    this.velocidad = limitarVector(this.velocidad, this.velocidadMaxima);
-  }
-
-  aplicarFriccion() {
-    const friccion = Math.pow(0.95, this.juego.pixiApp.ticker.deltaTime);
-    this.velocidad.x *= friccion;
-    this.velocidad.y *= friccion;
+  moverPosicionSegunVelocidadYPixelesPorFrame() {
+    //movimiento en pixeles por frame
+    this.posicion.x += this.velocidad.x * this.juego.pixiApp.ticker.deltaTime;
+    this.posicion.y += this.velocidad.y * this.juego.pixiApp.ticker.deltaTime;
   }
 
   rebotar() {
@@ -200,45 +109,6 @@ class GameObject {
 
   asignarTarget(quien) {
     this.target = quien;
-  }
-
-  perseguir() {
-    if (!this.target) return;
-    const dist = calcularDistancia(this.posicion, this.target.posicion);
-    if (dist > this.vision) return;
-
-    // Decaimiento exponencial: va de 1 a 0 a medida que se acerca
-    let factor = Math.pow(dist / this.distanciaParaLlegar, 3);
-
-    const difX = this.target.posicion.x - this.posicion.x;
-    const difY = this.target.posicion.y - this.posicion.y;
-
-    let vectorTemporal = {
-      x: -difX,
-      y: -difY,
-    };
-    vectorTemporal = limitarVector(vectorTemporal, 1);
-
-    this.aceleracion.x += -vectorTemporal.x * factor;
-    this.aceleracion.y += -vectorTemporal.y * factor;
-  }
-
-  escapar() {
-    if (!this.perseguidor) return;
-    const dist = calcularDistancia(this.posicion, this.perseguidor.posicion);
-    if (dist > this.vision) return;
-
-    const difX = this.perseguidor.posicion.x - this.posicion.x;
-    const difY = this.perseguidor.posicion.y - this.posicion.y;
-
-    let vectorTemporal = {
-      x: -difX,
-      y: -difY,
-    };
-    vectorTemporal = limitarVector(vectorTemporal, 1);
-
-    this.aceleracion.x += -vectorTemporal.x;
-    this.aceleracion.y += -vectorTemporal.y;
   }
 
   asignarVelocidad(x, y) {
